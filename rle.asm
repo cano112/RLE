@@ -3,12 +3,12 @@ DATA segment
 		BUFFER_SIZE=16384	
 		
 		ArgV						db 256 dup(?)				;args table
-		ArgC						db 0						;args number
+		ArgC						db 0					;args number
 		ArgPtr      				dw 9 dup(?)					;pointers to args
 		
 		InputPtr					dw ?
 		OutputPtr					dw ?
-		Mode						db 0						;compressing (0) or decompressing (1)
+		Mode						db 0					;compressing (0) or decompressing (1)
 		
 		InBuffer 					db BUFFER_SIZE dup('$')		
 		InBufferPtr					dw ?
@@ -18,10 +18,10 @@ DATA segment
 		OutBufferPtr				dw ?
 		BytesInBuffer				dw 0
 		
-		InHandler					dw ?						;input handler
-		OutHandler					dw ?						;output handler
+		InHandler					dw ?					;input handler
+		OutHandler					dw ?					;output handler
 		
-		EoL							db 10, 13, '$'				;end of line
+		EoL							db 10, 13, '$'			;end of line
 		
 		SuccessMsg					db "success!$"		
 		StatusMsg1					db "Opening input file... $"
@@ -76,83 +76,83 @@ CODE segment
 		push cx
 		push bx
 			
-		xor cx, cx								;same as "mov cx, 0"
-		mov cl, byte ptr es:[80h]				;load args length to cx (loop counter)
-		mov si, 82h								;set source pointer
+		xor cx, cx							;same as "mov cx, 0"
+		mov cl, byte ptr es:[80h]					;load args length to cx (loop counter)
+		mov si, 82h							;set source pointer
 		mov al, es:[si]							
 		mov di, offset ArgV						;set destination pointer
 		
-		cmp cl, 0								;check if ArgC>0
+		cmp cl, 0							;check if ArgC>0
 		jne parseArgumentsLoop
 		
-		mov dx, offset ErrMsg1					;print error message
+		mov dx, offset ErrMsg1						;print error message
 		call handleError						
 		
 		parseArgumentsLoop:						;load args to ArgV
 			mov al, byte ptr es:[si]			
 			
-			cmp al, 20h							;check if space
+			cmp al, 20h						;check if space
 			je whiteSpace						;if space, skip to white space removal
 			
-			cmp al, 9h							;check if tab
+			cmp al, 9h						;check if tab
 			je whiteSpace						;if tab, skip to white space removal
 			
-			cmp al, 0Dh							;check if CR (enter pressed)
+			cmp al, 0Dh						;check if CR (enter pressed)
 			je endOfArgs					
 			
-			mov byte ptr ds:[di], al			;if normal char => load to ArgV
+			mov byte ptr ds:[di], al				;if normal char => load to ArgV
 			inc si								
 			jmp parseArgumentsLoopCont
 			
 			endOfArgs:
-			mov byte ptr ds:[di], '$'			;replace CR with end of text
+			mov byte ptr ds:[di], '$'				;replace CR with end of text
 			inc si
 			jmp parseArgumentsLoopCont
 			
-			whiteSpace:							;if white space found
-			mov byte ptr ds:[di], 0				;load args separator
+			whiteSpace:						;if white space found
+			mov byte ptr ds:[di], 0					;load args separator
 			
 			whiteSpaceLoop:						;remove all white spaces left
 				inc si								
 				mov al, byte ptr es:[si]
-				cmp al, 20h						;check if space
+				cmp al, 20h					;check if space
 				je whiteSpaceLoop				;if space found => skip to next char
-				cmp al, 9h						;check if tab
+				cmp al, 9h					;check if tab
 				je whiteSpaceLoop				;if tab found => skip to next char
 			
-			parseArgumentsLoopCont:		    ;at this point, we do not have any white spaces left
+			parseArgumentsLoopCont:		    			;at this point, we do not have any white spaces left
 			inc di
 		
 		loop parseArgumentsLoop
 		
 		mov si, offset ArgV						;load args source pointer
-		mov di, offset ArgPtr					;load arg pointers table
+		mov di, offset ArgPtr						;load arg pointers table
 		mov bx, offset ArgC						;load arg number pointer	
 		
-		mov word ptr ds:[di], si				;load first arg pointer
+		mov word ptr ds:[di], si					;load first arg pointer
 		inc si
 		inc byte ptr ds:[bx]
 		add di, 2
 		
 		
 		separateArgsLoop:
-			mov al, byte ptr ds:[si]			;load char to al
+			mov al, byte ptr ds:[si]				;load char to al
 			
-			inc si								;point next char
-			cmp al, '$'							;if char == $
-			je parseArgumentsCont				;break					
-			cmp al, 0							;if char != NUL
-			jne separateArgsLoop				;continue
-												;else
-			mov word ptr ds:[di], si			;load arg pointer to ArgPtr
-			inc byte ptr ds:[bx]				;increment ArgC
+			inc si							;point next char
+			cmp al, '$'						;if char == $
+			je parseArgumentsCont					;break					
+			cmp al, 0						;if char != NUL
+			jne separateArgsLoop					;continue
+										;else
+			mov word ptr ds:[di], si				;load arg pointer to ArgPtr
+			inc byte ptr ds:[bx]					;increment ArgC
 		
-			add di, 2							;go to next arg pointer in ArgPtr (word=2byte)
+			add di, 2						;go to next arg pointer in ArgPtr (word=2byte)
 			jmp separateArgsLoop
 			
 		parseArgumentsCont:
 		
-												;fix first argument when there are more than one white spaces before first arg (DOSBox issue)
+										;fix first argument when there are more than one white spaces before first arg (DOSBox issue)
 		mov bx, 0
 		call getArgument
 		cmp byte ptr ds:[bx], 0
@@ -174,15 +174,15 @@ CODE segment
 		push bx
 		
 												
-		xor bx, bx								;getArgument uses whole bx
+		xor bx, bx							;getArgument uses whole bx
 		mov bl, al
 		call getArgument
-		xor ax, ax								;reset counter
+		xor ax, ax							;reset counter
 		
 		getArgumentLengthLoop:
 			inc al	
 			inc bx
-			cmp byte ptr ds:[bx], '$'			;if end of argument => break
+			cmp byte ptr ds:[bx], '$'				;if end of argument => break
 			jne getArgumentLengthLoop
 		
 		pop bx
@@ -204,7 +204,7 @@ CODE segment
 		push dx
 		push bx
 		
-		xor bx, bx								;getArgument uses whole bx
+		xor bx, bx							;getArgument uses whole bx
 		mov bl, al
 		
 		call getArgument
@@ -224,11 +224,11 @@ CODE segment
 		push bx
 		push dx
 		push ax
-												;check arg number
+										;check arg number
 		mov bx, offset ArgC		
 		cmp byte ptr ds:[bx], 2d				
 		jne checkArgumentsCont1			
-												;if ArgC = 2
+										;if ArgC = 2
 			push bx
 			
 			mov bx, 0
@@ -246,11 +246,11 @@ CODE segment
 		
 		cmp byte ptr ds:[bx], 3d
 		je checkArgumentsCont2
-			mov dx, offset ErrMsg3				;write out error msg
+			mov dx, offset ErrMsg3					;write out error msg
 			call handleError
 		
 			checkArgumentsCont2:
-			push bx								;if ArgC = 3
+			push bx							;if ArgC = 3
 				
 				mov bx, 0
 				call getArgument
@@ -292,9 +292,9 @@ CODE segment
 		mov dx, offset StatusMsg1
 		call print
 		
-		mov dx, word ptr ds:[InputPtr]			;filename
+		mov dx, word ptr ds:[InputPtr]					;filename
 		mov ah, 03dh							;open file
-		xor al, al								;read mode
+		xor al, al							;read mode
 		int 21h
 		
 		jnc openInputFileSuccess
@@ -321,8 +321,8 @@ CODE segment
 		mov dx, offset StatusMsg2
 		call print
 			
-		mov bx, word ptr ds:[InHandler]			;file handler
-		mov	ah, 03eh							;close file			
+		mov bx, word ptr ds:[InHandler]					;file handler
+		mov	ah, 03eh						;close file			
 		int	21h
 		jnc closeInputFileSuccess
 			mov dx, offset ErrMsg7
@@ -376,9 +376,9 @@ CODE segment
 		mov dx, offset StatusMsg4
 		call print
 		
-		mov dx, word ptr ds:[OutputPtr]			;filename
+		mov dx, word ptr ds:[OutputPtr]					;filename
 		mov ah, 03dh							;open file
-		mov al, 1d								;write mode
+		mov al, 1d							;write mode
 		int 21h
 		
 		jnc openOutputFileSuccess
@@ -407,8 +407,8 @@ CODE segment
 		mov dx, offset StatusMsg5
 		call print
 			
-		mov bx, word ptr ds:[OutHandler]			;file handler
-		mov	ah, 03eh								;close file
+		mov bx, word ptr ds:[OutHandler]				;file handler
+		mov	ah, 03eh						;close file
 		int	21h
 		jnc closeOutputFileSuccess
 			mov dx, offset ErrMsg7
@@ -426,7 +426,7 @@ CODE segment
 		pop ax
 	ret
 	
-	getChar:									;char loaded to ah, if al==1 then EoF
+	getChar:								;char loaded to ah, if al==1 then EoF
 		push bx
 		
 		xor al, al
@@ -452,7 +452,7 @@ CODE segment
 		pop bx
 	ret
 	
-	putChar:									;char loaded from ah
+	putChar:								;char loaded from ah
 		push bx
 			mov bx, word ptr ds:[OutBufferPtr]
 			mov byte ptr ds:[bx], ah
@@ -521,19 +521,19 @@ CODE segment
 		call print
 		
 		call getChar
-		cmp al, 0									;check if not EoF
+		cmp al, 0							;check if not EoF
 		jne compressLoopBreak
 		mov bh, ah
 		mov ch, 1
 		
 		compressLoop:
 			call getChar
-			cmp al, 0								;check if not EoF
+			cmp al, 0						;check if not EoF
 			jne compressLoopBreak
 			
-			cmp ah, bh								;ah - actual char, bh - previous char
+			cmp ah, bh						;ah - actual char, bh - previous char
 			jne serieBreak
-				cmp ch, 255							;break if serie>255
+				cmp ch, 255					;break if serie>255
 				je serieBreak
 				
 				inc ch
@@ -541,11 +541,11 @@ CODE segment
 			
 			serieBreak:
 				push ax
-				cmp bh, 0							;if nullbyte 
+				cmp bh, 0					;if nullbyte 
 				jne skipNullByteLoopL
 					mov ah, bh			
 					nullByteLoopL:
-						call putChar				;replace with double nullbyte
+						call putChar			;replace with double nullbyte
 						call putChar
 						dec ch
 						cmp ch, 0
@@ -555,10 +555,10 @@ CODE segment
 				
 				skipNullByteLoopL:
 				
-				cmp ch, 3							;if serie<=3 then do not modify 
-				jbe doNotModifyL					;jump below or equal
+				cmp ch, 3					;if serie<=3 then do not modify 
+				jbe doNotModifyL				;jump below or equal
 				
-				mov ah, 0							;else modify
+				mov ah, 0					;else modify
 				call putChar
 				mov ah, ch
 				call putChar
@@ -567,7 +567,7 @@ CODE segment
 				jmp skipDoNotModifyL
 				
 				doNotModifyL:
-				mov ah, bh							;if we do not modify, we have to put char the same number of times we've read it from file
+				mov ah, bh					;if we do not modify, we have to put char the same number of times we've read it from file
 				doNotModifyLoopL:
 					call putChar
 					dec ch
@@ -647,21 +647,21 @@ CODE segment
 		
 		decompressLoop:
 			call getChar
-			cmp al, 0									;if EoF
+			cmp al, 0						;if EoF
 			jne decompressLoopBreak
 			
-			cmp ah, 0									;0 means modified or null
+			cmp ah, 0						;0 means modified or null
 			je nullByteOrModified
 				call putChar
 				jmp skipNullByteOrModified
 				
 			nullByteOrModified:
 				call getChar
-				cmp al, 0								;if eof
+				cmp al, 0					;if eof
 				jne decompressLoopBreak
 				
 				cmp ah, 0
-				je nullByte								;that means nullbyte
+				je nullByte					;that means nullbyte
 					mov ch, ah
 					
 					call getChar
@@ -669,7 +669,7 @@ CODE segment
 					jne decompressLoopBreak
 					
 					modifiedLoop:
-						call putChar					;if modified
+						call putChar			;if modified
 						dec ch
 						cmp ch, 0
 					jne modifiedLoop
@@ -712,7 +712,7 @@ CODE segment
 		
 	ret
 	
-	print:										;prints text from ds:dx, use "mov dx, offset <label>" before
+	print:									;prints text from ds:dx, use "mov dx, offset <label>" before
 		push ax
 		
 		mov ah, 9h
@@ -736,7 +736,7 @@ CODE segment
 CODE ends
 
 STACK1 segment STACK
-							dw 127 dup(?)
+					dw 127 dup(?)
 		StackPointer		dw ?
 
 STACK1 ends
