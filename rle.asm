@@ -4,7 +4,7 @@ DATA segment
 		
 		ArgV						db 256 dup(?)				;args table
 		ArgC						db 0					;args number
-		ArgPtr      				dw 9 dup(?)					;pointers to args
+		ArgPtr      					dw 9 dup(?)				;pointers to args
 		
 		InputPtr					dw ?
 		OutputPtr					dw ?
@@ -12,16 +12,16 @@ DATA segment
 		
 		InBuffer 					db BUFFER_SIZE dup('$')		
 		InBufferPtr					dw ?
-		BytesInBufferLeftCount  	dw 0
+		BytesInBufferLeftCount  			dw 0
 		
 		OutBuffer					db BUFFER_SIZE dup('$')	
-		OutBufferPtr				dw ?
-		BytesInBuffer				dw 0
+		OutBufferPtr					dw ?
+		BytesInBuffer					dw 0
 		
 		InHandler					dw ?					;input handler
 		OutHandler					dw ?					;output handler
 		
-		EoL							db 10, 13, '$'			;end of line
+		EoL						db 10, 13, '$'				;end of line
 		
 		SuccessMsg					db "success!$"		
 		StatusMsg1					db "Opening input file... $"
